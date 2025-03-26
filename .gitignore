@@ -1,0 +1,11 @@
+/Debug/
+/bin/
+/DebugConfig/
+/Listings/
+/Objects/
+/.settings/
+/project/
+
+*.cproject
+*.project
+*.xml
