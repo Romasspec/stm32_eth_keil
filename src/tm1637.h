@@ -6,9 +6,9 @@
 #include "stm32f10x.h"
 #include "time.h"
 
-#define TM1637_DIO_PIN 			GPIO_Pin_6
-#define TM1637_CLK_PIN 			GPIO_Pin_7
-#define TM1637_PORT				GPIOB
+#define TM1637_DIO_PIN 			GPIO_Pin_14
+#define TM1637_CLK_PIN 			GPIO_Pin_13
+#define TM1637_PORT					GPIOA
 //#define TM1637_CLK_1()		TM1637_PORT->RXTX |= TM1637_CLK_PIN
 //#define TM1637_CLK_0()		TM1637_PORT->RXTX &=~TM1637_CLK_PIN
 //#define TM1637_DIO_1()		TM1637_PORT->RXTX |= TM1637_DIO_PIN

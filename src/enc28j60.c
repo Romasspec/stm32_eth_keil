@@ -1,45 +1,27 @@
 #include "enc28j60.h"
-#include "uart.h"
-uint8_t spi1_rx_buf[RXBUF_SIZE];
-uint8_t spi1_tx_buf[TXBUF_SIZE];
-uint8_t rx_buf_head = 0;
-uint8_t rx_buf_tail = 0;
 
-uint8_t tx_index; 			//тут хранится количество переданных байт
-uint8_t tx_len;   			//сколько всего байт нужно передать
-uint8_t *tx_data;     		//указатель на массив с передаваемыми данными
-
-static uint8_t Enc28j60Bank;
+static uint8_t Enc28j60Bank = 0;
 uint8_t macaddr[6] = MAC_ADDR;
-static int gNextPacketPtr;
+static int gNextPacketPtr = RXSTART_INIT;
 
-static uint8_t SPIx_WriteRead(uint8_t Byte)
+void enc28j60_writeOp(uint8_t op, uint8_t addres, uint8_t data)
 {
-	uint8_t receivedbyte = 0;
-	while (!SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE));
-	SPI_I2S_SendData(SPI1, Byte);
-	while (!SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_RXNE));
-	receivedbyte = (uint8_t)(SPI_I2S_ReceiveData(SPI1));
-	return receivedbyte;
+	CS_SELECT();
+	SPI_SendByte(op|(addres&ADDR_MASK));
+	SPI_SendByte(data);
+	CS_DESELECT();
 }
 
-void SPI_SendByte(uint8_t data)
+uint8_t enc28j60_readOp(uint8_t op, uint8_t addres)
 {
-//	while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY)) {};
-//	tx_index = 0;
-//	tx_len = len;
-//	tx_data = data;
-//	SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_TXE, ENABLE);
-	SPIx_WriteRead(data);
-}
-
-uint8_t SPI_ReceiveByte(void)
-{
-//	uint8_t bt = spi1_rx_buf[rx_buf_tail];
-//	rx_buf_tail++;
-//	rx_buf_tail = rx_buf_tail+1 % TXBUF_SIZE;
-	uint8_t bt = SPIx_WriteRead(0x00);
-	return bt; //вернём регистр данных
+	uint8_t result;
+	
+	CS_SELECT();
+	SPI_SendByte(op|(addres&ADDR_MASK));
+	if(addres & 0x80) SPI_ReceiveByte();
+	result=SPI_ReceiveByte();
+	CS_DESELECT();
+	return result;
 }
 
 static void enc28j60_readBuf(uint16_t len, uint8_t* data)
@@ -47,17 +29,17 @@ static void enc28j60_readBuf(uint16_t len, uint8_t* data)
 	CS_SELECT();
 	SPI_SendByte(ENC28J60_READ_BUF_MEM);
 	while(len--) {
-		*data++ = SPIx_WriteRead(0x00);
+		*data++ = SPI_ReceiveByte();
 	}
 	CS_DESELECT();
 }
 
-static void enc28j60_writeBuf(uint16_t len,uint8_t* data)
+static void enc28j60_writeBuf(uint16_t len, uint8_t* data)
 {
   CS_SELECT();
   SPI_SendByte(ENC28J60_WRITE_BUF_MEM);
   while(len--) {
-	SPI_SendByte(*data++);
+		SPI_SendByte(*data++);
   }
   CS_DESELECT();
 }
@@ -72,78 +54,110 @@ static void enc28j60_SetBank(uint8_t addres)
 	}
 }
 
-void enc28j60_writeOp(uint8_t op,uint8_t addres, uint8_t data)
-{
-//	spi1_tx_buf[0] = op|(addres&ADDR_MASK);
-//	spi1_tx_buf[1] = data;
-//	SPI_SendByte(spi1_tx_buf, 2);
-	CS_SELECT();
-	SPI_SendByte(op|(addres&ADDR_MASK));
-	SPI_SendByte(data);
-	CS_DESELECT();
-
-}
-
-uint8_t enc28j60_readOp(uint8_t op, uint8_t addres)
-{
-	uint8_t result;
-//	enc28j60_writeOp (op, addres, 0x00);
-//	while (rx_buf_head != rx_buf_tail) {
-//		result = spi1_rx_buf[rx_buf_tail];
-//		rx_buf_tail++;
-//	}
-//	spi1_tx_buf[0] = spi1_tx_buf[1] = 0xFF;
-//	SPI_SendByte(spi1_tx_buf, 2);
-//	//пропускаем ложный байт
-//	if(addres & 0x80) SPI_ReceiveByte();
-//	result=SPI_ReceiveByte();
-
-	CS_SELECT();
-	SPI_SendByte(op|(addres&ADDR_MASK));
-	if(addres & 0x80) SPI_ReceiveByte();
-	result=SPI_ReceiveByte();
-	CS_DESELECT();
-	return result;
-}
-
-static void enc28j60_writeRegByte(uint8_t addres,uint8_t data)
+static void enc28j60_writeRegByte(uint8_t addres, uint8_t data)
 {
 	enc28j60_SetBank(addres);
-	enc28j60_writeOp(ENC28J60_WRITE_CTRL_REG,addres,data);
+	enc28j60_writeOp(ENC28J60_WRITE_CTRL_REG, addres,data);
 }
 
 static uint8_t enc28j60_readRegByte(uint8_t addres)
 {
 	enc28j60_SetBank(addres);
-	return enc28j60_readOp(ENC28J60_READ_CTRL_REG,addres);
+	return enc28j60_readOp(ENC28J60_READ_CTRL_REG, addres);
 }
 
-static void enc28j60_writeReg(uint8_t addres,uint16_t data)
+static void enc28j60_writeReg(uint8_t addres, uint16_t data)
 {
 	enc28j60_writeRegByte(addres, data);
 	enc28j60_writeRegByte(addres+1, data>>8);
 }
 
-static void enc28j60_writePhy(uint8_t addres,uint16_t data)
+static uint16_t enc28j60_readReg(uint8_t addres)
+{
+	return enc28j60_readRegByte(addres) | (enc28j60_readRegByte(addres + 1) << 8);
+}
+	
+static void enc28j60_writePhy(uint8_t addres, uint16_t data)
 {
 	enc28j60_writeRegByte(MIREGADR, addres);
 	enc28j60_writeReg(MIWR, data);
 	while(enc28j60_readRegByte(MISTAT)&MISTAT_BUSY);
 }
+uint8_t fl;
+uint16_t enc28j60_packetReceive(uint8_t *buf, uint16_t buflen)
+{
+	uint16_t len = 0;
+	if((enc28j60_readRegByte(EPKTCNT)>0) || fl)
+	{
+		fl = 0;
+		enc28j60_writeReg(ERDPT,gNextPacketPtr);
+		uint16_t data = enc28j60_readReg(ERDPT);
+		uart1_send_buf((uint8_t*)&data, 2);
+		
+		struct{
+		  uint16_t nextPacket;
+		  uint16_t byteCount;
+		  uint16_t status;
+		} header;
+
+		enc28j60_readBuf(sizeof header,(uint8_t*)&header);
+		gNextPacketPtr=header.nextPacket;
+		len = header.byteCount-4;//remove the CRC count
+
+		if(len > buflen) {
+			len=buflen;
+		}
+		if((header.status&0x80)==0) {
+			len=0;
+		} else {
+			enc28j60_readBuf(len, buf);
+		}
+
+		buf[len]=0;
+
+		if(gNextPacketPtr-1>RXSTOP_INIT) {
+			enc28j60_writeReg(ERXRDPT,RXSTOP_INIT);
+		} else {
+			enc28j60_writeReg(ERXRDPT,gNextPacketPtr-1);
+		}
+		enc28j60_writeOp(ENC28J60_BIT_FIELD_SET,ECON2,ECON2_PKTDEC);
+	}
+
+	return len;
+}
+
+void enc28j60_packetSend(uint8_t *buf, uint16_t buflen)
+{
+	while(enc28j60_readOp(ENC28J60_READ_CTRL_REG,ECON1)&ECON1_TXRTS)		// Ждём готовности передатчика
+	{
+		if(enc28j60_readRegByte(EIR)& EIR_TXERIF){												// При ошибке, сбрасываем передатчик errata
+			enc28j60_writeOp(ENC28J60_BIT_FIELD_SET,ECON1,ECON1_TXRST);
+			enc28j60_writeOp(ENC28J60_BIT_FIELD_CLR,ECON1,ECON1_TXRST);
+		}		
+	}
+	
+//	enc28j60_writeReg(ETXST,TXSTART_INIT);
+	enc28j60_writeReg(EWRPT,TXSTART_INIT);															// Устанавливаем указатели ETXST и ETXND
+	enc28j60_writeReg(ETXND,TXSTART_INIT + buflen);
+	
+	enc28j60_writeBuf(1,(uint8_t*)"x00");																// Записываем пакет в буфер
+	enc28j60_writeBuf(buflen,buf);
+	
+	enc28j60_writeOp(ENC28J60_BIT_FIELD_SET,ECON1,ECON1_TXRTS);
+}
 
 void enc28j60_init (void)
-{
-	delay_ms(100);
+{	
 	RST_0();
-	delay_ms(5);
+	delay_ms(2);
 	RST_1();
-
+	delay_ms(2);
+	
 	enc28j60_writeOp(ENC28J60_SOFT_RESET,0,ENC28J60_SOFT_RESET);
 	delay_ms(2);
 	//проверим, что всё перезагрузилось
 	uint8_t dt = enc28j60_readOp(ENC28J60_READ_CTRL_REG,ESTAT);
 	while(!(enc28j60_readOp(ENC28J60_READ_CTRL_REG,ESTAT)&ESTAT_CLKRDY));
-//	if(((enc28j60_readOp(ENC28J60_READ_CTRL_REG,ESTAT )& ESTAT_CLKRDY) == 0x01)) {
 	uart1_send(dt);
 	
 	enc28j60_writeReg(ERXST,RXSTART_INIT);
@@ -178,82 +192,8 @@ void enc28j60_init (void)
 	enc28j60_SetBank(ECON1);
 	enc28j60_writeOp(ENC28J60_BIT_FIELD_SET,EIE,EIE_INTIE|EIE_PKTIE);
 	enc28j60_writeOp(ENC28J60_BIT_FIELD_SET,ECON1,ECON1_RXEN);//разрешаем приём пакетов
-}
-
-uint16_t enc28j60_packetReceive(uint8_t *buf,uint16_t buflen)
-{
-	uint16_t len = 0;
-	if(enc28j60_readRegByte(EPKTCNT)>0)
-	{
-		enc28j60_writeReg(ERDPT,gNextPacketPtr);
-
-		struct{
-		  uint16_t nextPacket;
-		  uint16_t byteCount;
-		  uint16_t status;
-		} header;
-
-		enc28j60_readBuf(sizeof header,(uint8_t*)&header);
-		gNextPacketPtr=header.nextPacket;
-		len = header.byteCount-4;//remove the CRC count
-
-		if(len > buflen) {
-			len=buflen;
-		}
-		if((header.status&0x80)==0) {
-			len=0;
-		} else {
-			enc28j60_readBuf(len, buf);
-		}
-
-		buf[len]=0;
-
-		if(gNextPacketPtr-1>RXSTOP_INIT) {
-			enc28j60_writeReg(ERXRDPT,RXSTOP_INIT);
-		} else {
-			enc28j60_writeReg(ERXRDPT,gNextPacketPtr-1);
-		}
-		enc28j60_writeOp(ENC28J60_BIT_FIELD_SET,ECON2,ECON2_PKTDEC);
-	}
-
-	return len;
-}
-
-void enc28j60_packetSend(uint8_t *buf,uint16_t buflen)
-{
-	while(enc28j60_readOp(ENC28J60_READ_CTRL_REG,ECON1)&ECON1_TXRTS)
-	{
-		if(enc28j60_readRegByte(EIR)& EIR_TXERIF){
-			enc28j60_writeOp(ENC28J60_BIT_FIELD_SET,ECON1,ECON1_TXRST);
-			enc28j60_writeOp(ENC28J60_BIT_FIELD_CLR,ECON1,ECON1_TXRST);
-		}		
-	}
 	
-	enc28j60_writeReg(EWRPT,TXSTART_INIT);
-	enc28j60_writeReg(ETXND,TXSTART_INIT+buflen);
-	enc28j60_writeBuf(1,(uint8_t*)"x00");
-	enc28j60_writeBuf(buflen,buf);
-	enc28j60_writeOp(ENC28J60_BIT_FIELD_SET,ECON1,ECON1_TXRTS);
-}
-
-void SPI1_IRQHandler (void)
-{
-	if(SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_TXE)) {
-		CS_SELECT();
-		SPI_I2S_SendData(SPI1, tx_data[tx_index]);
-		tx_index++;
-		if (tx_index >= tx_len) {
-			SPI_I2S_ITConfig(SPI1, SPI_I2S_IT_TXE, DISABLE);
-			while (SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY)) {};
-			CS_DESELECT();
-			NVIC_ClearPendingIRQ(SPI1_IRQn);
-		}
-		SPI_I2S_ClearITPendingBit(SPI1, SPI_I2S_IT_TXE);
-	}
-
-	if(SPI_I2S_GetITStatus(SPI1, SPI_I2S_IT_RXNE)) {
-//		GPIOC->ODR ^= GPIO_Pin_14;
-		spi1_rx_buf[rx_buf_head++] = (uint8_t)(SPI_I2S_ReceiveData(SPI1));
-		SPI_I2S_ClearITPendingBit(SPI1, SPI_I2S_IT_RXNE);
-	}
+	uint16_t data = enc28j60_readReg(ERDPT);
+	uart1_send_buf((uint8_t*)&data, 2);
+	fl = 1;
 }

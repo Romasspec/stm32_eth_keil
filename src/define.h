@@ -4,6 +4,7 @@
 #include "time.h"
 #include "ds18b20.h"
 #include "tm1637.h"
+#include "spi.h"
 #include "enc28j60.h"
 #include "net.h"
 #include "uart.h"

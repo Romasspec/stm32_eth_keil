@@ -1,22 +1,20 @@
 #ifndef ENC28J60_H_
 #define ENC28J60_H_
 #include "stm32f10x.h"
+#include "spi.h"
 #include "time.h"
+#include "uart.h"
 
-#define TXBUF_SIZE				255
-#define RXBUF_SIZE				255
+#define ENC28J60_CS_pin				SPI1_CS_pin
+#define ENC28J60_RST_pin			SPI1_RST_pin
+#define ENC28J60_SPI1_TXpin		SPI1_SPI1_TXpin
+#define ENC28J60_SPI1_RXpin		SPI1_SPI1_RXpin
+#define ENC28J60_PORT					SPI1_PORT
 
-#define ENC28J60_CS_pin			GPIO_Pin_8
-#define ENC28J60_RST_pin		GPIO_Pin_9
-#define ENC28J60_SPI1_TXpin		(GPIO_Pin_3|GPIO_Pin_5)
-#define ENC28J60_SPI1_RXpin		(GPIO_Pin_4)
-#define ENC28J60_PORT			GPIOB
-
-
-#define CS_SELECT()				ENC28J60_PORT->BRR = ENC28J60_CS_pin
-#define CS_DESELECT()			ENC28J60_PORT->BSRR = ENC28J60_CS_pin
-#define RST_0()					ENC28J60_PORT->BRR = ENC28J60_RST_pin
-#define RST_1()					ENC28J60_PORT->BSRR = ENC28J60_RST_pin
+#define CS_SELECT()						SPI1_CS_SELECT()
+#define CS_DESELECT()					SPI1_CS_DESELECT()
+#define RST_0()								SPI1_RST_0()
+#define RST_1()								SPI1_RST_1()
 
 #define ENC28J60_MAXFRAME 512
 #define MAC_ADDR   {0x00,0x15,0x42,0xBF,0xF0,0x51}
@@ -43,9 +41,9 @@
 // Bank 1 registers
 #define EPMM0           (0x08|0x20)
 #define EPMM1           (0x09|0x20)
-#define EPMCS   (0x10|0x20)
+#define EPMCS   				(0x10|0x20)
 #define ERXFCON         (0x18|0x20)
-#define EPKTCNT   (0x19|0x20)
+#define EPKTCNT   			(0x19|0x20)
 //--------------------------------------------------
 // Bank 2 registers
 #define MACON1          (0x00|0x40|0x80)
@@ -53,9 +51,9 @@
 #define MACON3          (0x02|0x40|0x80)
 #define MACON4          (0x03|0x40|0x80)
 #define MABBIPG         (0x04|0x40|0x80)
-#define MAIPG   (0x06|0x40|0x80)
+#define MAIPG   				(0x06|0x40|0x80)
 #define MAMXFL          (0x0A|0x40|0x80)
-#define MIREGADR  (0x14|0x40|0x80)
+#define MIREGADR  			(0x14|0x40|0x80)
 #define MIWR            (0x16|0x40|0x80)
 //--------------------------------------------------
 // Bank 3 registers
@@ -176,10 +174,8 @@
 //--------------------------------------------------
 
 void enc28j60_init (void);
-void SPI_SendByte(uint8_t data);
 void enc28j60_writeOp(uint8_t op,uint8_t addres, uint8_t data);
 uint8_t enc28j60_readOp(uint8_t op, uint8_t addres);
 uint16_t enc28j60_packetReceive(uint8_t *buf,uint16_t buflen);
 void enc28j60_packetSend(uint8_t *buf,uint16_t buflen);
-
 #endif
