@@ -5,6 +5,7 @@
 #include "time.h"
 #include "uart.h"
 
+
 #define ENC28J60_CS_pin				SPI1_CS_pin
 #define ENC28J60_RST_pin			SPI1_RST_pin
 #define ENC28J60_SPI1_TXpin		SPI1_SPI1_TXpin

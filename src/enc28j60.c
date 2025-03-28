@@ -1,8 +1,12 @@
 #include "enc28j60.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "string.h"
 
 static uint8_t Enc28j60Bank = 0;
 uint8_t macaddr[6] = MAC_ADDR;
-static int gNextPacketPtr = RXSTART_INIT;
+static int gNextPacketPtr = 11;//RXSTART_INIT;
+char buf[20]={0};
 
 void enc28j60_writeOp(uint8_t op, uint8_t addres, uint8_t data)
 {
@@ -83,16 +87,16 @@ static void enc28j60_writePhy(uint8_t addres, uint16_t data)
 	enc28j60_writeReg(MIWR, data);
 	while(enc28j60_readRegByte(MISTAT)&MISTAT_BUSY);
 }
-uint8_t fl;
+
 uint16_t enc28j60_packetReceive(uint8_t *buf, uint16_t buflen)
 {
 	uint16_t len = 0;
-	if((enc28j60_readRegByte(EPKTCNT)>0) || fl)
-	{
-		fl = 0;
+	if((enc28j60_readRegByte(EPKTCNT)>0))
+	{		
 		enc28j60_writeReg(ERDPT,gNextPacketPtr);
 		uint16_t data = enc28j60_readReg(ERDPT);
-		uart1_send_buf((uint8_t*)&data, 2);
+		sprintf((char *)buf, "ERDPT = %02X\r", data);
+		uart1_send_buf((uint8_t*)buf, strlen((char*)buf));
 		
 		struct{
 		  uint16_t nextPacket;
@@ -103,6 +107,8 @@ uint16_t enc28j60_packetReceive(uint8_t *buf, uint16_t buflen)
 		enc28j60_readBuf(sizeof header,(uint8_t*)&header);
 		gNextPacketPtr=header.nextPacket;
 		len = header.byteCount-4;//remove the CRC count
+		sprintf((char *)buf, "ERDPT = %04X\r", gNextPacketPtr);
+		uart1_send_buf((uint8_t*)buf, strlen((char*)buf));
 
 		if(len > buflen) {
 			len=buflen;
@@ -115,8 +121,11 @@ uint16_t enc28j60_packetReceive(uint8_t *buf, uint16_t buflen)
 
 		buf[len]=0;
 
-		if(gNextPacketPtr-1>RXSTOP_INIT) {
+		if(gNextPacketPtr-1 > RXSTOP_INIT) {
 			enc28j60_writeReg(ERXRDPT,RXSTOP_INIT);
+		} else if (gNextPacketPtr-1 < 0) {
+			//enc28j60_writeReg(ERXRDPT,RXSTART_INIT);
+			enc28j60_writeReg(ERDPT,RXSTART_INIT);
 		} else {
 			enc28j60_writeReg(ERXRDPT,gNextPacketPtr-1);
 		}
@@ -195,5 +204,4 @@ void enc28j60_init (void)
 	
 	uint16_t data = enc28j60_readReg(ERDPT);
 	uart1_send_buf((uint8_t*)&data, 2);
-	fl = 1;
 }
