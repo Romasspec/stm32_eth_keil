@@ -5,7 +5,7 @@
 
 static uint8_t Enc28j60Bank = 0;
 uint8_t macaddr[6] = MAC_ADDR;
-static int gNextPacketPtr = 11;//RXSTART_INIT;
+static int gNextPacketPtr = RXSTART_INIT;
 char buf[20]={0};
 
 void enc28j60_writeOp(uint8_t op, uint8_t addres, uint8_t data)
@@ -87,13 +87,15 @@ static void enc28j60_writePhy(uint8_t addres, uint16_t data)
 	enc28j60_writeReg(MIWR, data);
 	while(enc28j60_readRegByte(MISTAT)&MISTAT_BUSY);
 }
-
+//ERXWRPT хранит адрес, куда приемник начнет сохранять следующий кадр при его поступлении (только чтение, увеличивается когда успешно получен пакет)
+//ERXRDPT указывает на место в памяти, откуда мы будем забирать принятые данные + (определяет место в FIFO, куда приемному оборудованию запрещено записывать данные)
+//ERDPT указывает на место в памяти, с которого хотим прочитать данные + если бит AUTOINC в ECON2 установлен, то автоматически нкрементируется при чтении
 uint16_t enc28j60_packetReceive(uint8_t *buf, uint16_t buflen)
 {
 	uint16_t len = 0;
 	if((enc28j60_readRegByte(EPKTCNT)>0))
 	{		
-		enc28j60_writeReg(ERDPT,gNextPacketPtr);
+		enc28j60_writeReg(ERDPT,gNextPacketPtr);						//ERDPT заносим адрес, с которого хотим прочитать данные
 		uint16_t data = enc28j60_readReg(ERDPT);
 		sprintf((char *)buf, "ERDPT = %02X\r", data);
 		uart1_send_buf((uint8_t*)buf, strlen((char*)buf));
@@ -104,7 +106,7 @@ uint16_t enc28j60_packetReceive(uint8_t *buf, uint16_t buflen)
 		  uint16_t status;
 		} header;
 
-		enc28j60_readBuf(sizeof header,(uint8_t*)&header);
+		enc28j60_readBuf(sizeof header,(uint8_t*)&header);	//читаем из буфера заголовок по адресу который записали в ERDPT
 		gNextPacketPtr=header.nextPacket;
 		len = header.byteCount-4;//remove the CRC count
 		sprintf((char *)buf, "ERDPT = %04X\r", gNextPacketPtr);
@@ -113,19 +115,19 @@ uint16_t enc28j60_packetReceive(uint8_t *buf, uint16_t buflen)
 		if(len > buflen) {
 			len=buflen;
 		}
-		if((header.status&0x80)==0) {
+		if((header.status&0x80) == 0) {
 			len=0;
 		} else {
 			enc28j60_readBuf(len, buf);
 		}
-
+		
 		buf[len]=0;
 
-		if(gNextPacketPtr-1 > RXSTOP_INIT) {
+		if(gNextPacketPtr-1 > RXSTOP_INIT) {									//из-за бага нельзя писать четные адреса
 			enc28j60_writeReg(ERXRDPT,RXSTOP_INIT);
-		} else if (gNextPacketPtr-1 < 0) {
-			//enc28j60_writeReg(ERXRDPT,RXSTART_INIT);
-			enc28j60_writeReg(ERDPT,RXSTART_INIT);
+//		} else if (gNextPacketPtr-1 < 0) {
+//			//enc28j60_writeReg(ERXRDPT,RXSTART_INIT);
+//			enc28j60_writeReg(ERDPT,RXSTART_INIT);
 		} else {
 			enc28j60_writeReg(ERXRDPT,gNextPacketPtr-1);
 		}
@@ -144,10 +146,10 @@ void enc28j60_packetSend(uint8_t *buf, uint16_t buflen)
 			enc28j60_writeOp(ENC28J60_BIT_FIELD_CLR,ECON1,ECON1_TXRST);
 		}		
 	}
-	
-//	enc28j60_writeReg(ETXST,TXSTART_INIT);
-	enc28j60_writeReg(EWRPT,TXSTART_INIT);															// Устанавливаем указатели ETXST и ETXND
-	enc28j60_writeReg(ETXND,TXSTART_INIT + buflen);
+																																			// Устанавливаем указатели ETXST и ETXND
+	enc28j60_writeReg(EWRPT,TXSTART_INIT);															// Указатель куда начать копировать данные в буфер
+//	enc28j60_writeReg(ETXST,TXSTART_INIT);														//адрес начала буфера для передачи - задали при инициализации и менять смысла нет
+	enc28j60_writeReg(ETXND,TXSTART_INIT + buflen);											//адрес конца буфера для передачи
 	
 	enc28j60_writeBuf(1,(uint8_t*)"x00");																// Записываем пакет в буфер
 	enc28j60_writeBuf(buflen,buf);
@@ -169,11 +171,11 @@ void enc28j60_init (void)
 	while(!(enc28j60_readOp(ENC28J60_READ_CTRL_REG,ESTAT)&ESTAT_CLKRDY));
 	uart1_send(dt);
 	
-	enc28j60_writeReg(ERXST,RXSTART_INIT);
+	enc28j60_writeReg(ERXST,RXSTART_INIT);					//адрес начала буфера для приема	
+	enc28j60_writeReg(ERXND,RXSTOP_INIT);						//адрес конца буфера для приема
 	enc28j60_writeReg(ERXRDPT,RXSTART_INIT);
-	enc28j60_writeReg(ERXND,RXSTOP_INIT);
-	enc28j60_writeReg(ETXST,TXSTART_INIT);
-	enc28j60_writeReg(ETXND,TXSTOP_INIT);
+	enc28j60_writeReg(ETXST,TXSTART_INIT);					//адрес начала буфера для передачи
+	enc28j60_writeReg(ETXND,TXSTOP_INIT);						//адрес конца буфера для передачи
 
 	//Enable Broadcast
 	enc28j60_writeRegByte(ERXFCON,enc28j60_readRegByte(ERXFCON)|ERXFCON_BCEN);
