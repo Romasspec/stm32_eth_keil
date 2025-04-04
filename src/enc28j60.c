@@ -6,7 +6,7 @@
 static uint8_t Enc28j60Bank = 0;
 uint8_t macaddr[6] = MAC_ADDR;
 static int gNextPacketPtr = RXSTART_INIT;
-char buf[20]={0};
+//char buf[20]={0};
 
 void enc28j60_writeOp(uint8_t op, uint8_t addres, uint8_t data)
 {

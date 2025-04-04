@@ -60,4 +60,4 @@ void systic_init(void);
 void spi1_init(void);
 void uart1_init(void);
 
-#endif
+#endif /*DEFINE_H*/

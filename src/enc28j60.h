@@ -179,4 +179,5 @@ void enc28j60_writeOp(uint8_t op,uint8_t addres, uint8_t data);
 uint8_t enc28j60_readOp(uint8_t op, uint8_t addres);
 uint16_t enc28j60_packetReceive(uint8_t *buf,uint16_t buflen);
 void enc28j60_packetSend(uint8_t *buf,uint16_t buflen);
-#endif
+
+#endif /*ENC28J60_H_*/
