@@ -13,7 +13,8 @@ void eth_send(enc28j60_frame_ptr *frame, uint16_t len)
 {
   memcpy(frame->addr_dest,frame->addr_src,6);
   memcpy(frame->addr_src,macaddr,6);
-  enc28j60_packetSend((void*)frame,len + sizeof(enc28j60_frame_ptr));
+  //enc28j60_packetSend((void*)frame,len + sizeof(enc28j60_frame_ptr));
+	enc28j60_packetSend((void*)frame,len);
 }
 
 void eth_read(enc28j60_frame_ptr *frame, uint16_t len)
@@ -51,20 +52,26 @@ void net_pool(void)
 //		eth_read(frame,len);
 //	}
 	
-	enc28j60_frame_ptr	*ethFrame_ptr = (enc28j60_frame_ptr*) net_buf;
-	if ((len=enc28j60_packetReceive(net_buf,sizeof(net_buf)))>0)
+	enc28j60_frame_ptr	*ethFrame_ptr = (void*) net_buf;
+	if ((len = enc28j60_packetReceive(net_buf,sizeof(net_buf))) > 0)
 	{
-		if(ethFrame_ptr->type == ETH_ARP){
+		if (len >= sizeof(enc28j60_frame_ptr)) {
+			if(ethFrame_ptr->type == ETH_ARP){
+				if(arp_read(ethFrame_ptr,len-sizeof(enc28j60_frame_ptr)))
+				{
+					arp_send(ethFrame_ptr);					
+				}
+			} else if(ethFrame_ptr->type == ETH_IP){
+				ip_read(ethFrame_ptr,len-sizeof(ip_pkt_ptr));
+			} else {
+				len = 0;
+			}
 			
-		}
-		
-		if(ethFrame_ptr->type == ETH_IP){
 			
-		}
-		
-		
-		if (len > 0) {
-			eth_send((enc28j60_frame_ptr*) net_buf, len);
+			if (len > 0) {
+				eth_send((enc28j60_frame_ptr*) net_buf, len);
+			}			
+			
 		}
 		
 	}

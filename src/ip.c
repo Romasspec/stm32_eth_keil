@@ -32,7 +32,7 @@ uint8_t ip_send(enc28j60_frame_ptr *frame, uint16_t len)
 	memcpy(ip_pkt->ipaddr_src,ipaddr,4);
 	ip_pkt->cs = checksum((void*)ip_pkt,sizeof(ip_pkt_ptr));
 	
-	eth_send(frame,len);
+	//eth_send(frame,len);
 	return res;
 }
 
@@ -62,21 +62,29 @@ uint8_t ip_read(enc28j60_frame_ptr *frame, uint16_t len)
 	
 	if((ip_pkt->verlen==0x45)&&(!memcmp(ip_pkt->ipaddr_dst,ipaddr,4)))
 	{
-		len = be16toword(ip_pkt->len) - sizeof(ip_pkt_ptr);				//длина данных
+		uint16_t rxCheckSum = ip_pkt->cs;
+		ip_pkt->cs = 0;
+		uint16_t calcCheckSum = checksum ((uint8_t*)ip_pkt, sizeof(ip_pkt_ptr));
+		
+		if (rxCheckSum == calcCheckSum) {
+			len = be16toword(ip_pkt->len) - sizeof(ip_pkt_ptr);				//длина данных
 //		sprintf(str1,"rnip_cs 0x%04Xrn", ip_pkt->cs);
 //		uart1_send_buf((uint8_t*)str1, strlen(str1));
 //		
 //		ip_pkt->cs=0;
 //		sprintf(str1,"ip_cs 0x%04Xrn", checksum((void*)ip_pkt,sizeof(ip_pkt_ptr)));
 //		uart1_send_buf((uint8_t*)str1, strlen(str1));
-		if (ip_pkt->prt==IP_ICMP)
-		{
-			icmp_read(frame,len);
-		} else if (ip_pkt->prt==IP_TCP){
+			if (ip_pkt->prt==IP_ICMP)
+			{
+				icmp_read(frame,len);
+			} else if (ip_pkt->prt==IP_TCP){
 
-		} else if (ip_pkt->prt==IP_UDP){
+			} else if (ip_pkt->prt==IP_UDP){
 
+			}
+			
 		}
+		
 }
   return res;
   

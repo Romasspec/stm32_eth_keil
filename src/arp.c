@@ -43,6 +43,6 @@ void arp_send(enc28j60_frame_ptr *frame)
 	memcpy(msg->macaddr_src,macaddr,6);
 	memcpy(msg->ipaddr_dst,msg->ipaddr_src,4);
 	memcpy(msg->ipaddr_src,ipaddr,4);
-	eth_send(frame,sizeof(arp_msg_ptr));
+//	eth_send(frame,sizeof(arp_msg_ptr));
 }
 
