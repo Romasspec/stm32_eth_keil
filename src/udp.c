@@ -10,7 +10,15 @@ uint8_t udp_read(enc28j60_frame_ptr *frame, uint16_t len)
 	ip_pkt_ptr *ip_pkt = (void*)frame->data;
 	udp_pkt_ptr *udp_pkt = (void*)ip_pkt->data;
 	
-	if ((len>=sizeof(udp_pkt))&&(udp_pkt->destPort == UDP_DEMO_PORT)) {
+	
+	sprintf(str1,"UDP_srcPort %d; UDP_desPort %d; UDP_len %d; UDP_CS %d\r",
+				be16toword(udp_pkt->srcPort),be16toword(udp_pkt->destPort),be16toword(udp_pkt->len),be16toword(udp_pkt->checkSum));
+				uart1_send_buf((uint8_t*)str1, strlen(str1));
+	
+	
+	
+	
+	if (/*(len>=sizeof(udp_pkt))&&*/be16toword(udp_pkt->destPort) == UDP_DEMO_PORT) {
 		sprintf(str1,"udp request\r");
 		uart1_send_buf((uint8_t*)str1, strlen(str1));
 		
@@ -20,7 +28,7 @@ uint8_t udp_read(enc28j60_frame_ptr *frame, uint16_t len)
 		uart1_send_buf(udp_pkt->data, len - sizeof(udp_pkt_ptr));
 		uart1_send_buf((uint8_t*)"\r\n", 2);		
 		
-		for(uint16_t i = 0 ; i < len - 1; i++){
+		for(uint16_t i = 0 ; i < len - sizeof(udp_pkt_ptr) - 1; i++){
       udp_pkt->data[i]++;
     }
 		
@@ -28,7 +36,7 @@ uint8_t udp_read(enc28j60_frame_ptr *frame, uint16_t len)
 		udp_pkt->destPort = udp_pkt->srcPort;
 		udp_pkt->srcPort = swapPort;
 		udp_pkt->checkSum = 0;
-		udp_pkt->checkSum = checksum((void*)udp_pkt, len);		
+//		udp_pkt->checkSum = checksum((void*)udp_pkt, len);
 	}
 	
 	return res;

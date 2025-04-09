@@ -97,8 +97,8 @@ uint16_t enc28j60_packetReceive(uint8_t *buf, uint16_t buflen)
 	{		
 		enc28j60_writeReg(ERDPT,gNextPacketPtr);						//ERDPT заносим адрес, с которого хотим прочитать данные
 		uint16_t data = enc28j60_readReg(ERDPT);
-		sprintf((char *)buf, "ERDPT = %02X\r", data);
-		uart1_send_buf((uint8_t*)buf, strlen((char*)buf));
+//		sprintf((char *)buf, "ERDPT = %02X\r", data);
+//		uart1_send_buf((uint8_t*)buf, strlen((char*)buf));
 		
 		struct{
 		  uint16_t nextPacket;
@@ -109,8 +109,8 @@ uint16_t enc28j60_packetReceive(uint8_t *buf, uint16_t buflen)
 		enc28j60_readBuf(sizeof header,(uint8_t*)&header);	//читаем из буфера заголовок по адресу который записали в ERDPT
 		gNextPacketPtr=header.nextPacket;
 		len = header.byteCount-4;//remove the CRC count
-		sprintf((char *)buf, "ERDPT = %04X\r", gNextPacketPtr);
-		uart1_send_buf((uint8_t*)buf, strlen((char*)buf));
+//		sprintf((char *)buf, "ERDPT = %04X\r", gNextPacketPtr);
+//		uart1_send_buf((uint8_t*)buf, strlen((char*)buf));
 
 		if(len > buflen) {
 			len=buflen;

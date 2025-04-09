@@ -69,7 +69,7 @@ uint8_t ip_read(enc28j60_frame_ptr *frame, uint16_t len)
 		
 		if (rxCheckSum == calcCheckSum) {
 			len = be16toword(ip_pkt->len) - sizeof(ip_pkt_ptr);				//длина данных
-//		sprintf(str1,"rnip_cs 0x%04Xrn", ip_pkt->cs);
+//		sprintf(str1,"rnip_cs 0x%04X\r\n", ip_pkt->cs);
 //		uart1_send_buf((uint8_t*)str1, strlen(str1));
 //		
 //		ip_pkt->cs=0;
@@ -77,11 +77,16 @@ uint8_t ip_read(enc28j60_frame_ptr *frame, uint16_t len)
 //		uart1_send_buf((uint8_t*)str1, strlen(str1));
 			if (ip_pkt->prt==IP_ICMP)
 			{
+				sprintf(str1,"ICMP paket\r\n");
+				uart1_send_buf((uint8_t*)str1, strlen(str1));
 				icmp_read(frame,len);
 				ip_send(frame,len+sizeof(ip_pkt_ptr));
 			} else if (ip_pkt->prt==IP_TCP){
-
+				sprintf(str1,"TCP IP paket\r\n");
+				uart1_send_buf((uint8_t*)str1, strlen(str1));
 			} else if (ip_pkt->prt==IP_UDP){
+				sprintf(str1,"UDP paket\r\n");
+				uart1_send_buf((uint8_t*)str1, strlen(str1));
 				udp_read(frame,len);
 				ip_send(frame,len+sizeof(ip_pkt_ptr));
 			}
