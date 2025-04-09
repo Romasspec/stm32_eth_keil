@@ -1,4 +1,5 @@
 #include "ip.h"
+#include "udp.h"
 
 extern uint8_t ipaddr[4];
 extern char str1[60];
@@ -49,7 +50,7 @@ uint8_t icmp_read(enc28j60_frame_ptr *frame, uint16_t len)
 		icmp_pkt->msg_tp=ICMP_REPLY;
 		icmp_pkt->cs=0;
 		icmp_pkt->cs=checksum((void*)icmp_pkt,len);
-		ip_send(frame,len+sizeof(ip_pkt_ptr));
+//		ip_send(frame,len+sizeof(ip_pkt_ptr));
 	}	
 
 	return res;
@@ -77,10 +78,12 @@ uint8_t ip_read(enc28j60_frame_ptr *frame, uint16_t len)
 			if (ip_pkt->prt==IP_ICMP)
 			{
 				icmp_read(frame,len);
+				ip_send(frame,len+sizeof(ip_pkt_ptr));
 			} else if (ip_pkt->prt==IP_TCP){
 
 			} else if (ip_pkt->prt==IP_UDP){
-
+				udp_read(frame,len);
+				ip_send(frame,len+sizeof(ip_pkt_ptr));
 			}
 			
 		}

@@ -38,5 +38,7 @@ uint8_t data[];					//данные
 
 uint8_t ip_read(enc28j60_frame_ptr *frame, uint16_t len);
 uint8_t icmp_read(enc28j60_frame_ptr *frame, uint16_t len);
+uint16_t checksum(uint8_t *ptr, uint16_t len);
+uint8_t ip_send(enc28j60_frame_ptr *frame, uint16_t len);
 
 #endif /*IP_H*/
