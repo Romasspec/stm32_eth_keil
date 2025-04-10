@@ -35,8 +35,8 @@ uint8_t udp_read(enc28j60_frame_ptr *frame, uint16_t len)
 		uint16_t swapPort = udp_pkt->destPort;
 		udp_pkt->destPort = udp_pkt->srcPort;
 		udp_pkt->srcPort = swapPort;
-		udp_pkt->checkSum = 0;
-//		udp_pkt->checkSum = checksum((void*)udp_pkt, len);
+		udp_pkt->checkSum = be16toword(IP_UDP + len);				 //в CS для UDP входят: длина UDP пакета + тип протокола (UDP)+ заголовок UDP + данные UDP + IP источника + IP приемника
+		udp_pkt->checkSum = checksum((uint8_t*)udp_pkt-8, len+8);	 //IP источника и IP приемника возьмем из конца IP пакета, длину сооветственно увеличим на это число байт
 	}
 	
 	return res;
