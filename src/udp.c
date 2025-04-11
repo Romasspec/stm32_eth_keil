@@ -18,7 +18,7 @@ uint8_t udp_read(enc28j60_frame_ptr *frame, uint16_t len)
 	
 	
 	
-	if (/*(len>=sizeof(udp_pkt))&&*/be16toword(udp_pkt->destPort) == UDP_DEMO_PORT) {
+	if ((len>=sizeof(udp_pkt))&&be16toword(udp_pkt->destPort) == UDP_DEMO_PORT) {
 		sprintf(str1,"udp request\r");
 		uart1_send_buf((uint8_t*)str1, strlen(str1));
 		
