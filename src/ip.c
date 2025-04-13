@@ -85,7 +85,7 @@ uint8_t ip_read(enc28j60_frame_ptr *frame, uint16_t len)
 			} else if (ip_pkt->prt==IP_TCP){
 				sprintf(str1,"TCP IP paket\r\n");
 				uart1_send_buf((uint8_t*)str1, strlen(str1));
-				tcp_read(frame,len);
+				res = tcp_read(frame,len);
 			} else if (ip_pkt->prt==IP_UDP){
 				sprintf(str1,"UDP paket\r\n");
 				uart1_send_buf((uint8_t*)str1, strlen(str1));

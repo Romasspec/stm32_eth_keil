@@ -62,7 +62,10 @@ void net_pool(void)
 					arp_send(ethFrame_ptr);					
 				}
 			} else if(ethFrame_ptr->type == ETH_IP){
-				ip_read(ethFrame_ptr,len-sizeof(ip_pkt_ptr));
+				uint8_t res = ip_read(ethFrame_ptr,len-sizeof(ip_pkt_ptr));
+				if (res == 1) {
+					len = 0;
+				}
 			} else {
 				len = 0;
 			}
