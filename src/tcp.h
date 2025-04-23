@@ -35,6 +35,7 @@ typedef struct tcp_pkt {
 #define TCP_OP_SYNACK 1
 #define TCP_OP_ACK_OF_FIN 2
 #define TCP_OP_ACK_OF_RST 3
+#define TCP_OP_ACK_OF_DATA 4
 //--------------------------------------------------
 
 uint8_t tcp_read (enc28j60_frame_ptr *frame, uint16_t len);

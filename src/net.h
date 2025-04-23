@@ -11,7 +11,7 @@ typedef struct enc28j60_frame{
   uint8_t addr_dest[6];
   uint8_t addr_src[6];
   uint16_t type;
-  uint8_t data[1];
+  uint8_t data[];
 } enc28j60_frame_ptr;
 
 
