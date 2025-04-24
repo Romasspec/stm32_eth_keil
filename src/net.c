@@ -53,7 +53,7 @@ void net_pool(void)
 //	}
 	
 	enc28j60_frame_ptr	*ethFrame_ptr = (void*) net_buf;
-	if ((len = enc28j60_packetReceive(net_buf,sizeof(net_buf))) > 0)
+	while ((len = enc28j60_packetReceive(net_buf,sizeof(net_buf))) > 0)
 	{
 		if (len >= sizeof(enc28j60_frame_ptr)) {
 			if(ethFrame_ptr->type == ETH_ARP){
