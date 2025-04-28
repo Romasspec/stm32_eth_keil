@@ -19,6 +19,16 @@ typedef struct tcp_pkt {
   uint8_t data[];					//данные
 } tcp_pkt_ptr;
 
+typedef struct tcp_prop {
+	volatile uint16_t port_dst;							//порт получателя
+	volatile uint32_t seq_num;							//порядковый номер байта
+	volatile uint32_t ack_num;							//номер подтверждения
+	volatile uint32_t data_stat;						//статус передачи данных
+	volatile uint32_t data_size;						//размер данных для передачи
+	volatile uint16_t last_data_part_size;	//размер последней части данных для передачи
+	volatile uint16_t cnt_data_part;				//количество оставшихся частей данных для передачи
+} tcp_prop_ptr;
+
 #define LOCAL_PORT_TCP 80
 //--------------------------------------------------
 //флаги TCP
@@ -37,6 +47,11 @@ typedef struct tcp_pkt {
 #define TCP_OP_ACK_OF_RST 3
 #define TCP_OP_ACK_OF_DATA 4
 //--------------------------------------------------
+
+//Статусы TCP
+#define TCP_CONNECTED 1
+#define TCP_DISCONNECTED 2
+#define TCP_DISCONNECTING 3 //закрываем соединение после подтверждения получателя
 
 uint8_t tcp_read (enc28j60_frame_ptr *frame, uint16_t len);
 uint8_t tcp_send(uint8_t *ip_addr, uint16_t port, uint8_t op);

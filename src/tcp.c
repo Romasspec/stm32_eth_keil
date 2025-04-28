@@ -5,6 +5,71 @@ extern uint8_t net_buf[ENC28J60_MAXFRAME];
 extern uint8_t ipaddr[4];
 extern uint8_t macaddr[6];
 
+tcp_prop_ptr tcpprop;
+volatile uint16_t tcp_mss = 458;
+volatile uint8_t tcp_stat = TCP_DISCONNECTED;
+
+//Подготовка заголовка TCP-пакета
+void tcp_header_prepare(tcp_pkt_ptr *tcp_pkt, uint16_t port, uint8_t fl, uint16_t len)
+{
+	tcp_pkt->port_dst = be16toword(port);
+  tcp_pkt->port_src = be16toword(LOCAL_PORT_TCP);
+  tcp_pkt->bt_num_seg = tcpprop.seq_num;
+  tcp_pkt->num_ask = tcpprop.ack_num;
+  tcp_pkt->fl = fl;
+  tcp_pkt->size_wnd = be16toword(8192);
+  tcp_pkt->urg_ptr = 0;
+  tcp_pkt->len_hdr = len << 2;
+  tcp_pkt->cs = be16toword(IP_TCP + len);
+  tcp_pkt->cs=checksum((uint8_t*)tcp_pkt-8, len+8);
+}
+
+
+//Подготовка заголовка IP-пакета
+
+void ip_header_prepare(ip_pkt_ptr *ip_pkt, uint8_t *ip_addr, uint8_t prt, uint16_t len)
+{
+  ip_pkt->len=be16toword(len);
+  ip_pkt->id = 0;
+  ip_pkt->ts = 0;
+  ip_pkt->verlen = 0x45;
+  ip_pkt->fl_frg_of=0;
+  ip_pkt->ttl=128;
+  ip_pkt->cs = 0;
+  ip_pkt->prt=prt;
+  memcpy(ip_pkt->ipaddr_dst,ip_addr,4);
+  memcpy(ip_pkt->ipaddr_src,ipaddr,4);
+  ip_pkt->cs = checksum((void*)ip_pkt,sizeof(ip_pkt_ptr));	
+}
+
+/*Отправка ответа на запрос соединения*/
+uint8_t tcp_send_synack(enc28j60_frame_ptr *frame, uint8_t *ip_addr, uint16_t port)
+{
+  uint8_t res=0;
+  uint16_t len=0;
+  ip_pkt_ptr *ip_pkt = (void*)(frame->data);
+  tcp_pkt_ptr *tcp_pkt = (void*)(ip_pkt->data);
+	
+	tcpprop.seq_num = rand();
+	tcpprop.ack_num = be32todword(be32todword(tcp_pkt->bt_num_seg) + 1);
+	tcp_pkt->data[0]=2;//Maximum Segment Size (2)
+	tcp_pkt->data[1]=4;//Length
+	tcp_pkt->data[2]=(uint8_t) (tcp_mss>>8);//MSS = 458
+	tcp_pkt->data[3]=(uint8_t) tcp_mss;
+	len = sizeof(tcp_pkt_ptr)+4;
+	tcp_header_prepare(tcp_pkt, port, TCP_SYN|TCP_ACK, len);
+  
+	len+=sizeof(ip_pkt_ptr);
+	ip_header_prepare(ip_pkt, ip_addr, IP_TCP, len);
+	
+	//Заполним заголовок Ethernet
+	memcpy(frame->addr_dest,frame->addr_src,6);
+	eth_send(frame,ETH_IP,len);
+	
+	
+	return res;
+}
+
 uint8_t tcp_send(uint8_t *ip_addr, uint16_t port, uint8_t op)
 {
 	uint8_t res=0;
