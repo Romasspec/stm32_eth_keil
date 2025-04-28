@@ -53,7 +53,15 @@ typedef struct tcp_prop {
 #define TCP_DISCONNECTED 2
 #define TCP_DISCONNECTING 3 //закрываем соединение после подтверждения получателя
 
+//Статусы передачи данных
+#define DATA_COMPLETED 0 	//передача данных закончена
+#define DATA_ONE 1 				//передаём единственный пакет
+#define DATA_FIRST 2 			//передаём первый пакет
+#define DATA_MIDDLE 3 		//передаём средний пакет
+#define DATA_LAST 4 			//передаём последний пакет
+#define DATA_END 5 				//закрываем соединение после передачи данных
+
 uint8_t tcp_read (enc28j60_frame_ptr *frame, uint16_t len);
-uint8_t tcp_send(uint8_t *ip_addr, uint16_t port, uint8_t op);
+//uint8_t tcp_send(uint8_t *ip_addr, uint16_t port, uint8_t op);
 
 #endif /*TCP_H*/
