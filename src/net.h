@@ -17,6 +17,8 @@ typedef struct enc28j60_frame{
 
 #define be16toword(a) ((((a)>>8)&0xff)|(((a)<<8)&0xff00))
 #define be32todword(a) ((((a)>>24)&0xff)|(((a)>>8)&0xff00)|(((a)<<8)&0xff0000)|(((a)<<24)&0xff000000))
+//#define htonl(a)			 ((((a)>>24)&0xff)|(((a)>>8)&0xff00)|(((a)<<8)&0xff0000)|(((a)<<24)&0xff000000))
+
 #define ETH_ARP be16toword(0x0806)
 #define ETH_IP be16toword(0x0800)
 

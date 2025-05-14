@@ -171,7 +171,7 @@
 #define TXSTART_INIT        0x0C00  // start of TX buffer, room for 1 packet
 #define TXSTOP_INIT         0x11FF  // end of TX buffer
 //--------------------------------------------------
-#define MAX_FRAMELEN      1500
+#define MAX_FRAMELEN      600
 //--------------------------------------------------
 
 void enc28j60_init (void);

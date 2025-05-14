@@ -160,9 +160,9 @@ void enc28j60_packetSend(uint8_t *buf, uint16_t buflen)
 void enc28j60_init (void)
 {	
 	RST_0();
-	delay_ms(2);
+	delay_ms(5);
 	RST_1();
-	delay_ms(2);
+	delay_ms(5);
 	
 	enc28j60_writeOp(ENC28J60_SOFT_RESET,0,ENC28J60_SOFT_RESET);
 	delay_ms(2);

@@ -20,6 +20,7 @@ typedef struct tcp_pkt {
 } tcp_pkt_ptr;
 
 typedef struct tcp_prop {
+	volatile uint16_t space;
 	volatile uint16_t port_dst;							//порт получателя
 	volatile uint32_t seq_num;							//порядковый номер байта
 	volatile uint32_t ack_num;							//номер подтверждения
