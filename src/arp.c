@@ -2,7 +2,7 @@
 
 extern uint8_t macaddr[6];
 uint8_t ipaddr[4]=IP_ADDR;
-char str1[60]={0};
+char str1[100]={0};
 
 uint8_t arp_read(enc28j60_frame_ptr *frame, uint16_t len)
 {

@@ -7,8 +7,8 @@ extern uint8_t ipaddr[4];
 extern uint8_t macaddr[6];
 
 
-uint32_t tcpprop_seq_num = 0;
-uint32_t tcpprop_ack_num = 0;
+//uint32_t tcpprop_seq_num = 0;
+//uint32_t tcpprop_ack_num = 0;
 volatile uint16_t tcp_mss = 458;
 volatile uint8_t tcp_stat = TCP_DISCONNECTED;
 
@@ -37,8 +37,8 @@ void tcp_header_prepare(tcp_pkt_ptr *tcp_pkt, uint16_t port, uint8_t fl, uint16_
 {
 	tcp_pkt->port_dst = be16toword(port);
   tcp_pkt->port_src = be16toword(LOCAL_PORT_TCP);
-  tcp_pkt->bt_num_seg = tcpprop_seq_num;
-  tcp_pkt->num_ask = tcpprop_ack_num;
+  tcp_pkt->bt_num_seg = tcpprop.seq_num;
+  tcp_pkt->num_ask = tcpprop.ack_num;
   tcp_pkt->fl = fl;
   tcp_pkt->size_wnd = be16toword(8192);
   tcp_pkt->urg_ptr = 0;
@@ -73,8 +73,8 @@ uint8_t tcp_send_synack(enc28j60_frame_ptr *frame, uint8_t *ip_addr, uint16_t po
 	ip_pkt_ptr *ip_pkt = (void*)(frame->data);
 	tcp_pkt_ptr *tcp_pkt = (void*)(ip_pkt->data);
 	
-	tcpprop_seq_num = rand();
-	tcpprop_ack_num = be32todword(be32todword(tcp_pkt->bt_num_seg) + 1);
+	tcpprop.seq_num = rand();
+	tcpprop.ack_num = be32todword(be32todword(tcp_pkt->bt_num_seg) + 1);
 	tcp_pkt->data[0]=2;//Maximum Segment Size (2)
 	tcp_pkt->data[1]=4;//Length
 	tcp_pkt->data[2]=(uint8_t) (tcp_mss>>8);//MSS = 458
@@ -103,8 +103,8 @@ uint8_t tcp_send_finack(enc28j60_frame_ptr *frame, uint8_t *ip_addr, uint16_t po
 	ip_pkt_ptr *ip_pkt = (void*)(frame->data);
 	tcp_pkt_ptr *tcp_pkt = (void*)(ip_pkt->data);
 	
-	tcpprop_seq_num = tcp_pkt->num_ask;
-	tcpprop_ack_num = be32todword(be32todword(tcp_pkt->bt_num_seg) + 1);
+	tcpprop.seq_num = tcp_pkt->num_ask;
+	tcpprop.ack_num = be32todword(be32todword(tcp_pkt->bt_num_seg) + 1);
 	len = sizeof(tcp_pkt_ptr);
 	tcp_header_prepare(tcp_pkt, port, TCP_ACK, len);
 	
@@ -146,8 +146,8 @@ uint8_t tcp_send_data(enc28j60_frame_ptr *frame, uint8_t *ip_addr, uint16_t port
   tcp_pkt_ptr *tcp_pkt = (void*)(ip_pkt->data);
 	
   sz_data = be16toword(ip_pkt->len)-20-(tcp_pkt->len_hdr>>2);
-  tcpprop_seq_num = tcp_pkt->num_ask;
-  tcpprop_ack_num = be32todword(be32todword(tcp_pkt->bt_num_seg) + sz_data);
+  tcpprop.seq_num = tcp_pkt->num_ask;
+  tcpprop.ack_num = be32todword(be32todword(tcp_pkt->bt_num_seg) + sz_data);
   len = sizeof(tcp_pkt_ptr);	
   //отправим подтверждение на пакет данных
   tcp_header_prepare(tcp_pkt, port, TCP_ACK, len);
@@ -598,15 +598,15 @@ uint8_t tcp_send_http_one(enc28j60_frame_ptr *frame, uint8_t *ip_addr, uint16_t 
 	//Отправим сначала подтверждение на пакет запроса
 //	sz_data = be16toword(ip_pkt->len)-20-(tcp_pkt->len_hdr>>2);
 	sz_data = be16toword(ip_pkt->len)-20-(tcp_pkt->len_hdr>>2);
-	tcpprop_seq_num = tcp_pkt->num_ask;
+	tcpprop.seq_num = tcp_pkt->num_ask;
 //	tcpprop_ack_num = tcp_pkt->bt_num_seg;
-	tcpprop_ack_num = be32todword(be32todword(tcp_pkt->bt_num_seg) + sz_data);
+	tcpprop.ack_num = be32todword(be32todword(tcp_pkt->bt_num_seg) + sz_data);
 	//tcpprop.ack_num = be32todword(be32todword(tcp_pkt->bt_num_seg) + 1);
-	sprintf(str1,"tcpprop.seq_num = %d; tcpprop.ack_num = %d; sz_data = %d\r\n",	be32todword(tcpprop_seq_num), be32todword(tcpprop_ack_num), sz_data);
+	sprintf(str1,"tcpprop.seq_num = %d; tcpprop.ack_num = %d; sz_data = %d\r\n",	be32todword(tcpprop.seq_num), be32todword(tcpprop.ack_num), sz_data);
 	uart1_send_buf((uint8_t*)str1,strlen(str1));	
-	sprintf(str1,"tcpprop.seq_num = %d; tcpprop.ack_num = %d; sz_data = %d\r\n",	be32todword(tcpprop_seq_num), be32todword(tcpprop_ack_num), sz_data);
+	sprintf(str1,"tcpprop.seq_num = %d; tcpprop.ack_num = %d; sz_data = %d\r\n",	be32todword(tcpprop.seq_num), be32todword(tcpprop.ack_num), sz_data);
 	uart1_send_buf((uint8_t*)str1,strlen(str1));
-	sprintf(str1,"tcpprop.seq_num = %d; tcpprop.ack_num = %d; sz_data = %d\r\n",	be32todword(tcpprop_seq_num), be32todword(tcpprop_ack_num), sz_data);
+	sprintf(str1,"tcpprop.seq_num = %d; tcpprop.ack_num = %d; sz_data = %d\r\n",	be32todword(tcpprop.seq_num), be32todword(tcpprop.ack_num), sz_data);
 	uart1_send_buf((uint8_t*)str1,strlen(str1));
 	len = sizeof(tcp_pkt_ptr);
 	tcp_header_prepare(tcp_pkt, port, TCP_ACK, len);
@@ -620,8 +620,8 @@ uint8_t tcp_send_http_one(enc28j60_frame_ptr *frame, uint8_t *ip_addr, uint16_t 
 	eth_send(frame,len);
 		
 	//Отправляем страницу
-	strcpy((char*)tcp_pkt->data,http_header);
-	memcpy((void*)(tcp_pkt->data+strlen(http_header)),(void*)index_htm,sizeof(index_htm));
+	strcpy((char*)tcp_pkt->data,header_200);
+	memcpy((void*)(tcp_pkt->data+strlen(header_200)),(void*)index_htm,sizeof(index_htm));
 //	uart1_send_buf((uint8_t*)tcp_pkt->data, strlen(http_header));
 //	uart1_send_buf((uint8_t*)"\r\n",2);
 	len = sizeof(tcp_pkt_ptr);
@@ -651,8 +651,8 @@ uint8_t tcp_send_http_dataend(enc28j60_frame_ptr *frame, uint8_t *ip_addr, uint1
   uint16_t len=0;
   ip_pkt_ptr *ip_pkt = (void*)(frame->data);
   tcp_pkt_ptr *tcp_pkt = (void*)(ip_pkt->data);
-  tcpprop_seq_num = tcp_pkt->num_ask;
-  tcpprop_ack_num = tcp_pkt->bt_num_seg;
+  tcpprop.seq_num = tcp_pkt->num_ask;
+  tcpprop.ack_num = tcp_pkt->bt_num_seg;
   len = sizeof(tcp_pkt_ptr);
   tcp_header_prepare(tcp_pkt, port, TCP_FIN|TCP_ACK, len);
   

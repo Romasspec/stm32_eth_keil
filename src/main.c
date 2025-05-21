@@ -304,7 +304,7 @@ void gpio_init(void)
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 
 //	GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, ENABLE);
-	GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable,DISABLE);
+	GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable,ENABLE);
 
 	/* Configure PA13 and PA14 in output open drive mode */
 	//TM1637 pin
