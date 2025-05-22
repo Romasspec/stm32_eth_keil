@@ -55,6 +55,7 @@ void net_pool(void)
 	enc28j60_frame_ptr	*ethFrame_ptr = (void*) net_buf;
 	while ((len = enc28j60_packetReceive(net_buf,sizeof(net_buf))) > 0)
 	{
+		GPIOC->ODR |= GPIO_Pin_14;
 		if (len >= sizeof(enc28j60_frame_ptr)) {
 			if(ethFrame_ptr->type == ETH_ARP){
 				if(arp_read(ethFrame_ptr,len-sizeof(enc28j60_frame_ptr)))
@@ -76,7 +77,7 @@ void net_pool(void)
 			}			
 			
 		}
-		
+		GPIOC->ODR &=~GPIO_Pin_14;
 	}
 	
 	

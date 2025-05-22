@@ -92,7 +92,7 @@ int main (void)
 			timeout = millis() + 2000;								// таймаут для определения отсутствия датчика
 		}
 
-		net_pool();
+		
 		uart_pool();
 	}
 }
@@ -166,7 +166,7 @@ void task_5ms_1(void)
 	{
 		LED_ON();
 	}
-
+	net_pool();
 	task_5ms_ptr = &task_5ms_2;
 }
 

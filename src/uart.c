@@ -7,7 +7,7 @@ void uart1_send (uint8_t data)
 {
 	while(USART_GetFlagStatus(USART1, USART_FLAG_TXE) == RESET)
 	{
-		GPIOC->ODR ^= GPIO_Pin_14;
+//		GPIOC->ODR ^= GPIO_Pin_14;
 	}	
 	USART_SendData(USART1, data);
 }

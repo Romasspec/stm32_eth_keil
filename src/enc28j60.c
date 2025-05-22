@@ -90,9 +90,12 @@ static void enc28j60_writePhy(uint8_t addres, uint16_t data)
 //ERXWRPT хранит адрес, куда приемник начнет сохранять следующий кадр при его поступлении (только чтение, увеличивается когда успешно получен пакет)
 //ERXRDPT указывает на место в памяти, откуда мы будем забирать принятые данные + (определяет место в FIFO, куда приемному оборудованию запрещено записывать данные)
 //ERDPT указывает на место в памяти, с которого хотим прочитать данные + если бит AUTOINC в ECON2 установлен, то автоматически нкрементируется при чтении
+uint16_t templen;
 uint16_t enc28j60_packetReceive(uint8_t *buf, uint16_t buflen)
 {
 	uint16_t len = 0;
+	templen = enc28j60_readRegByte(EPKTCNT);
+	
 	if((enc28j60_readRegByte(EPKTCNT)>0))
 	{		
 		enc28j60_writeReg(ERDPT,gNextPacketPtr);						//ERDPT заносим адрес, с которого хотим прочитать данные
